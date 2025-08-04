@@ -1,0 +1,52 @@
+{
+  "name": "AI Quality Control Dev",
+  "dockerFile": "Dockerfile",
+  "context": "..",
+  "runArgs": ["--init", "--privileged"],
+
+  "postCreateCommand": "dotnet --version && node -v && python3 --version && ng version",
+
+  "mounts": [
+    "source=${localWorkspaceFolder}/frontend-angular,target=/workspace/frontend-angular,type=bind",
+    "source=${localWorkspaceFolder}/backend-dotnet,target=/workspace/backend-dotnet,type=bind",
+    "source=${localWorkspaceFolder}/ml-service-python,target=/workspace/ml-service-python,type=bind"
+  ],
+
+  "remoteUser": "vscode",
+
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2.12.2": {},
+    "ghcr.io/devcontainers/features/git:1": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        // Essential Extensions
+        "ms-vscode.remote-repositories",
+        "ms-vscode-remote.remote-containers",
+        "ms-azuretools.vscode-docker",
+
+        // .NET Extensions
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp",
+
+        // Angular/Web Extensions
+        "angular.ng-template",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+
+        // Python Extensions
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "ms-python.black-formatter"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/python/3.13.5/bin/python3.13"
+      }
+    }
+  },
+
+  "forwardPorts": [4200, 5000, 8000]
+}
