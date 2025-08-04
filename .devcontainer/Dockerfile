@@ -20,6 +20,13 @@ RUN cd /tmp && \
     make altinstall && \
     rm /tmp/Python-3.13.5.tgz
 
+# Install Node.js and Angular CLI
+RUN apt-get update && apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    node -v && npm -v && \
+    npm install -g @angular/cli
+
 # Create symlinks for python3, pip, etc.
 RUN ln -s /opt/python/3.13.5/bin/python3.13        /opt/python/3.13.5/bin/python3 && \
     ln -s /opt/python/3.13.5/bin/python3.13        /opt/python/3.13.5/bin/python && \
@@ -35,13 +42,6 @@ ENV PATH="/opt/python/3.13.5/bin:$PATH"
 
 # Install ML dependencies globally
 RUN pip install fastapi uvicorn xgboost numpy pandas scikit-learn
-
-# Install Node.js and Angular CLI
-RUN apt-get update && apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
-    apt-get install -y nodejs && \
-    node -v && npm -v && \
-    npm install -g @angular/cli
 
 # Set default shell
 SHELL ["/bin/bash", "-c"]
