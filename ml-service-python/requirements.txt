@@ -4,3 +4,7 @@ xgboost
 numpy
 pandas
 scikit-learn
+matplotlib
+seaborn
+aiofiles
+python-multipart
