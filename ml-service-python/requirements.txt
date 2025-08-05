@@ -8,3 +8,6 @@ matplotlib
 seaborn
 aiofiles
 python-multipart
+celery[redis]
+redis
+joblib
