@@ -1,0 +1,192 @@
+// This file contains common styles shared across all step components.
+
+// Base styles for all step containers
+.step-container {
+  max-width: 56rem; // 900px
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+
+  &.large {
+    max-width: 72rem; // 1152px
+  }
+}
+
+.step-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  .title {
+    font-size: 2.25rem;
+    font-weight: 300;
+    color: hsl(var(--foreground));
+    margin-bottom: 0.5rem;
+  }
+  .subtitle {
+    color: hsl(var(--muted-foreground));
+  }
+}
+
+.card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  box-shadow: 0 2px 10px -2px hsla(0, 0%, 0%, 0.1);
+  &.success-card {
+    border-color: hsla(var(--success), 0.2);
+    background-color: hsla(var(--success), 0.05);
+  }
+}
+
+.card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid hsl(var(--border));
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 500;
+  }
+}
+
+.card-content {
+  padding: 1.5rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &.btn-primary {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    &:hover {
+      background-color: hsl(var(--primary-hover));
+    }
+    &:disabled {
+      background-color: hsl(var(--abb-gray-medium));
+      cursor: not-allowed;
+    }
+  }
+
+  &.btn-outline {
+    background-color: transparent;
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
+    &:hover {
+      background-color: hsl(var(--accent));
+    }
+  }
+   &.large {
+    padding: 0.75rem 2rem;
+    font-size: 1.125rem;
+    margin-top: 1rem;
+  }
+}
+
+.step-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  padding: 1rem;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: hsl(var(--muted-foreground));
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+  &.success { color: hsl(var(--success)); }
+  &.error { color: hsl(var(--destructive)); }
+  &.primary { color: hsl(var(--primary)); }
+  &.small { font-size: 1rem; font-weight: 600; }
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid hsl(var(--primary));
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.icon {
+  width: 3rem;
+  height: 3rem;
+  color: hsl(var(--muted-foreground));
+  &.success {
+    color: hsl(var(--success));
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+}
+
+.error-message {
+  color: hsl(var(--destructive));
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.success-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: hsl(var(--success));
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.centered-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  min-height: 300px;
+}
+
+.status-title {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  &.primary { color: hsl(var(--primary)); }
+  &.success { color: hsl(var(--success)); }
+}
+
+.status-subtitle {
+  color: hsl(var(--muted-foreground));
+}
+
+.chart-container {
+  position: relative;
+  height: 350px;
+  width: 100%;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

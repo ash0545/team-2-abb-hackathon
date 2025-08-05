@@ -1,0 +1,77 @@
+<div class="step-container">
+  <div class="step-header">
+    <h2 class="title">Model Training & Evaluation</h2>
+    <p class="subtitle">Train your machine learning model and view performance metrics</p>
+  </div>
+
+  <!-- Initial State / Training State -->
+  <ng-container *ngIf="!trainingResults">
+    <div class="card">
+      <div class="card-content centered-content">
+        <div *ngIf="isTraining; else readyToTrain">
+          <div class="spinner large"></div>
+          <h3 class="status-title">Training Model...</h3>
+          <p class="status-subtitle">This may take a few moments</p>
+          <div class="progress-bar">
+            <div class="progress-bar-fill"></div>
+          </div>
+        </div>
+        <ng-template #readyToTrain>
+          <svg class="icon large primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <h3 class="status-title">Ready to Train Model</h3>
+          <p class="status-subtitle">Click the button below to start training</p>
+          <button class="btn btn-primary large" (click)="trainModel()">Train Model</button>
+        </ng-template>
+        <div *ngIf="error" class="error-message">{{ error }}</div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- Results State -->
+  <ng-container *ngIf="trainingResults">
+    <div class="card success-card">
+      <div class="card-content">
+        <h3 class="success-title">
+          <svg class="icon success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          Model Trained Successfully
+        </h3>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <p class="stat-label">Accuracy</p>
+        <p class="stat-value">{{ trainingResults.accuracy | number:'1.1-1' }}%</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Precision</p>
+        <p class="stat-value">{{ trainingResults.precision | number:'1.1-1' }}%</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Recall</p>
+        <p class="stat-value">{{ trainingResults.recall | number:'1.1-1' }}%</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">F1-Score</p>
+        <p class="stat-value">{{ trainingResults.f1Score | number:'1.1-1' }}%</p>
+      </div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-header"><h3 class="card-title">Training Metrics</h3></div>
+        <div class="card-content"><div class="chart-container"><canvas #metricsChart></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3 class="card-title">Confusion Matrix</h3></div>
+        <div class="card-content"><div class="chart-container"><canvas #confusionChart></canvas></div></div>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="step-footer">
+    <button class="btn btn-primary" (click)="proceedToNextStep()" [disabled]="!trainingResults">
+      Next: Start Simulation
+    </button>
+  </div>
+</div>
