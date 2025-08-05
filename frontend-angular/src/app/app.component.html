@@ -1,31 +1,29 @@
-<div class="app-container">
-  <app-header [currentStep]="currentStep" [steps]="steps"></app-header>
-  
-  <main class="main-content">
-    <div [ngSwitch]="currentStep">
-      <app-step1-upload 
-        *ngSwitchCase="1"
-        (datasetUploaded)="onDatasetUploaded($event)">
-      </app-step1-upload>
-      
-      <app-step2-date-ranges 
-        *ngSwitchCase="2"
-        (dateRangesSet)="onDateRangesSet($event)">
-      </app-step2-date-ranges>
+<app-header [currentStep]="currentStep" [steps]="steps"></app-header>
 
-      <app-step3-training
-        *ngSwitchCase="3"
-        [dateRanges]="dateRanges"
-        (modelTrained)="onModelTrained()">
-      </app-step3-training>
+<main class="main-content">
+  <div [ngSwitch]="currentStep">
 
-      <app-step4-simulation
-        *ngSwitchCase="4"
-        [dateRanges]="dateRanges"
-        (restart)="handleRestart()">
-      </app-step4-simulation>
+    <div *ngSwitchCase="1">
+      <app-step1-upload (datasetUploaded)="onDatasetUploaded($event)"></app-step1-upload>
     </div>
-  </main>
-  
-  <app-footer></app-footer>
-</div>
+
+    <app-step2-date-ranges 
+      *ngSwitchCase="2"
+      (dateRangesSet)="onDateRangesSet($event)">
+    </app-step2-date-ranges>
+
+    <app-step3-training 
+      *ngSwitchCase="3"
+      [dateRanges]="dateRanges"
+      (modelTrained)="onModelTrained()">
+    </app-step3-training>
+
+    <app-step4-simulation 
+      *ngSwitchCase="4"
+      [dateRanges]="dateRanges"
+      (restart)="handleRestart()">
+    </app-step4-simulation>
+  </div>
+</main>
+
+<app-footer></app-footer>

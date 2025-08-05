@@ -1,6 +1,9 @@
 import { bootstrapApplication } from '@angular/platform-browser';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http'; // ✅ ADD THIS
 import { AppComponent } from './app/app.component';
-import { appConfig } from './app/app.config';
 
-bootstrapApplication(AppComponent, appConfig)
-  .catch(err => console.error("Bootstrap Error:", err));
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideHttpClient(withInterceptorsFromDi()) // ✅ MODERN WAY TO PROVIDE HTTP
+  ]
+}).catch(err => console.error("Bootstrap Error:", err));

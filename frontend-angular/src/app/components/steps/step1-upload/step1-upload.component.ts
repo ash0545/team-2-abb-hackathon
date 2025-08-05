@@ -19,49 +19,62 @@ export class Step1UploadComponent {
   metadata: DatasetMetadata | null = null;
   error: string | null = null;
 
-  constructor(private apiService: ApiService) {}
+  constructor(private apiService: ApiService) {
+    console.log('✅ Step1UploadComponent is rendering!');
+  }
 
-  onDragOver(event: DragEvent) {
+  onDragOver(event: DragEvent): void {
     event.preventDefault();
     this.isDragOver = true;
   }
 
-  onDragLeave(event: DragEvent) {
+  onDragLeave(event: DragEvent): void {
     event.preventDefault();
     this.isDragOver = false;
   }
 
-  onDrop(event: DragEvent) {
+  onDrop(event: DragEvent): void {
     event.preventDefault();
     this.isDragOver = false;
     const files = event.dataTransfer?.files;
-    if (files && files.length > 0) {
-      this.handleFileUpload(files[0]);
-    }
+    if (files?.length) this.handleFileUpload(files[0]);
   }
 
-  onFileSelected(event: Event) {
+  onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
-    if (input.files && input.files.length > 0) {
-      this.handleFileUpload(input.files[0]);
-    }
+    if (input.files?.length) this.handleFileUpload(input.files[0]);
   }
 
- handleFileUpload(file: File) {
-  this.error = null;
-  this.metadata = {
-    numberOfRecords: 100000,
-    numberOfColumns: 15,
-    passRatePercentage: 85.5,
-    firstTimestamp: '2022-01-01T00:00:00Z',
-    lastTimestamp: '2022-12-31T23:59:59Z',
-    fileName: file.name,
-    fileSize: `${(file.size / (1024 * 1024)).toFixed(2)} MB`
-  };
-}
+  handleFileUpload(file: File): void {
+    if (file.type !== 'text/csv' && !file.name.toLowerCase().endsWith('.csv')) {
+      this.error = 'Invalid file type. Please upload a CSV file.';
+      return;
+    }
 
-  proceedToNextStep() {
+    this.error = null;
+    this.metadata = null;
+    this.isUploading = true;
+
+    this.apiService.uploadDataset(file)
+      .pipe(finalize(() => this.isUploading = false))
+      .subscribe({
+        next: (responseMetadata) => {
+          this.metadata = {
+            ...responseMetadata,
+            firstTimestamp: new Date(responseMetadata.firstTimestamp).toISOString(),
+lastTimestamp: new Date(responseMetadata.lastTimestamp).toISOString()
+          };
+        },
+        error: (err) => {
+          this.error = err.message;
+          this.metadata = null;
+        }
+      });
+  }
+
+  proceedToNextStep(): void {
     if (this.metadata) {
+      console.log('📤 Emitting datasetUploaded:', this.metadata);
       this.datasetUploaded.emit(this.metadata);
     }
   }

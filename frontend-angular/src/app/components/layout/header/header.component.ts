@@ -1,12 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-export interface Step {
-  id: number;
-  title: string;
-  isCompleted: boolean;
-  isActive: boolean;
-}
+import { Step } from './header.component.model'; // ✅ Correct path now
 
 @Component({
   selector: 'app-header',
@@ -16,6 +10,12 @@ export interface Step {
   styleUrls: ['./header.component.scss']
 })
 export class HeaderComponent {
-  @Input() currentStep: number = 1;
+  @Input() currentStep!: number;
   @Input() steps: Step[] = [];
+
+  constructor() {
+    console.log('📢 HeaderComponent rendered!');
+  }
 }
+export type { Step };
+

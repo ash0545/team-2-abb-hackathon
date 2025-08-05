@@ -6,11 +6,10 @@ export interface DatasetMetadata {
   passRatePercentage: number;
   firstTimestamp: string;
   lastTimestamp: string;
-  // Frontend-specific additions
-  fileName?: string;
-  fileSize?: string;
+  fileName: string;
+  fileSize: string;
+  timestampsAreSynthetic: boolean; // New property
 }
-
 export interface DateRange {
   start: string;
   end: string;
