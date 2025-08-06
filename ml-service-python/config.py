@@ -70,3 +70,6 @@ OBJECTIVE = "binary:logistic"
 ID_COLUMN = "Id"
 TARGET_COLUMN = "Response"
 TIMESTAMP_COLUMN = "synthetic_timestamp"  # This column is added by the .NET backend
+
+# --- Simulation Control ---
+SIMULATION_WARMUP_PERIOD_SECONDS = 10

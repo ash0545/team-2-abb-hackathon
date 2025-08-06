@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import List, Any, Dict, Optional
+from typing import List, Any, Dict, Optional, Union
 
 # --- Stage 1 ---
 
@@ -62,6 +62,8 @@ class DataSplitResponse(BaseModel):
 
 
 # --- Stage 3 ---
+
+
 # --- Sub-models for the final result ---
 class Metrics(BaseModel):
     accuracy: float
@@ -109,3 +111,53 @@ class TrainingStatusResponse(BaseModel):
     result: Optional[TrainingResult] = (
         None  # The final result payload, only present on SUCCESS
     )
+
+
+# --- Stage 4 ---
+
+
+# --- A model for simple status updates (like warmup) ---
+class SimpleStatusProgress(BaseModel):
+    status: str
+
+
+# --- Sub-models for the real-time data packet ---
+class LivePredictionData(BaseModel):
+    timestamp: datetime
+    sample_id: str
+    prediction: str  # 'Pass' or 'Fail'
+    confidence: float  # 0-100
+    top_features: Dict[str, Any]  # e.g., {"L3_S38_F3960": 0.123, ...}
+
+
+class LiveStatistics(BaseModel):
+    total_predictions: int
+    pass_count: int
+    fail_count: int
+    average_confidence: float  # 0-100
+
+
+# --- The main progress payload for each update ---
+class SimulationProgress(BaseModel):
+    current_row_index: int
+    total_rows: int
+    quality_score: float  # For the main line chart
+    live_prediction: LivePredictionData  # For the table
+    live_stats: LiveStatistics  # For the metric cards & donut chart
+
+
+# --- Main Response Models for the Endpoints ---
+class SimulationStartResponse(BaseModel):
+    task_id: str
+
+
+class SimulationStopResponse(BaseModel):
+    task_id: str
+    message: str
+
+
+class SimulationStatusResponse(BaseModel):
+    task_id: str
+    status: str  # PENDING, PROGRESS, SUCCESS, FAILURE
+    progress: Optional[Union[SimulationProgress, SimpleStatusProgress]] = None
+    result: Optional[Dict[str, Any]] = None  # Final summary message
