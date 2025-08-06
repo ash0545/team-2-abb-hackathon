@@ -108,3 +108,52 @@ export interface TrainingStatusResponse {
   progress: TrainingProgress | null;
   result: TrainingResult | null;
 }
+
+// --- Stage 4 ---
+
+// --- Models for starting and stopping the simulation ---
+export interface SimulationStartResponse {
+  task_id: string;
+}
+
+export interface SimulationStopResponse {
+  task_id: string;
+  message: string;
+}
+
+// --- Sub-models for the real-time data packet ---
+export interface LivePredictionData {
+  timestamp: string; // ISO 8601 string
+  sample_id: string;
+  prediction: 'Pass' | 'Fail';
+  confidence: number; // This is the Quality Score (0-100)
+  top_features: { [key: string]: number };
+}
+
+export interface LiveStatistics {
+  total_predictions: number;
+  pass_count: number;
+  fail_count: number;
+  average_confidence: number;
+}
+
+// --- The two possible shapes for the 'progress' field ---
+export interface SimulationDataPacket {
+  current_row_index: number;
+  total_rows: number;
+  quality_score: number;
+  live_prediction: LivePredictionData;
+  live_stats: LiveStatistics;
+}
+
+export interface SimpleStatusProgress {
+  status: string;
+}
+
+// --- Main model for the status polling response ---
+export interface SimulationStatusResponse {
+  task_id: string;
+  status: 'PENDING' | 'PROGRESS' | 'SUCCESS' | 'FAILURE' | 'REVOKED';
+  progress: SimulationDataPacket | SimpleStatusProgress | null;
+  result: { message: string } | { error: string } | null;
+}

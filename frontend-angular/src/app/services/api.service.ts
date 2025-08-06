@@ -8,6 +8,9 @@ import {
   DateRangeValidationResponse,
   TrainingStartResponse,
   TrainingStatusResponse,
+  SimulationStartResponse,
+  SimulationStatusResponse,
+  SimulationStopResponse,
 } from '../models/api.models';
 
 @Injectable({
@@ -70,6 +73,40 @@ export class ApiService {
   getTrainingStatus(task_id: string): Observable<TrainingStatusResponse> {
     return this.http
       .get<TrainingStatusResponse>(`${this.apiUrl}/training/status/${task_id}`)
+      .pipe(catchError(this.handleError));
+  }
+
+  // --- Stage 4 ---
+
+  /**
+   * Sends a request to start the real-time simulation task.
+   */
+  startSimulation(): Observable<SimulationStartResponse> {
+    return this.http
+      .post<SimulationStartResponse>(`${this.apiUrl}/simulation/start`, {})
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * Sends a request to stop (revoke) a running simulation task.
+   */
+  stopSimulation(taskId: string): Observable<SimulationStopResponse> {
+    return this.http
+      .post<SimulationStopResponse>(
+        `${this.apiUrl}/simulation/stop/${taskId}`,
+        {}
+      )
+      .pipe(catchError(this.handleError));
+  }
+
+  /**
+   * Polls the backend for the status of a specific simulation task.
+   */
+  getSimulationStatus(taskId: string): Observable<SimulationStatusResponse> {
+    return this.http
+      .get<SimulationStatusResponse>(
+        `${this.apiUrl}/simulation/status/${taskId}`
+      )
       .pipe(catchError(this.handleError));
   }
 
