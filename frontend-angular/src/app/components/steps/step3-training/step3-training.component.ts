@@ -1,8 +1,17 @@
-import { Component, EventEmitter, Input, Output, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  Output,
+  ViewChild,
+  ElementRef,
+  OnDestroy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../../services/api.service';
-import { DateRanges, TrainingMetrics } from '../../../models/api.models';
-import { finalize } from 'rxjs/operators';
+import { DateRanges, TrainingResult } from '../../../models/api.models';
+import { Subscription, timer } from 'rxjs';
+import { switchMap, takeWhile } from 'rxjs/operators';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -12,53 +21,74 @@ Chart.register(...registerables);
   standalone: true,
   imports: [CommonModule],
   templateUrl: './step3-training.component.html',
-  styleUrls: ['./step3-training.component.scss']
+  styleUrls: ['./step3-training.component.scss'],
 })
-export class Step3TrainingComponent implements AfterViewInit {
+export class Step3TrainingComponent implements OnDestroy {
   @Input() dateRanges: DateRanges | null = null;
   @Output() modelTrained = new EventEmitter<void>();
 
   @ViewChild('metricsChart') metricsChartCanvas!: ElementRef<HTMLCanvasElement>;
-  @ViewChild('confusionChart') confusionChartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('confusionChart')
+  confusionChartCanvas!: ElementRef<HTMLCanvasElement>;
 
+  // --- State Management ---
   isTraining = false;
-  trainingResults: TrainingMetrics | null = null;
+  trainingStatusMessage = '';
+  trainingResults: TrainingResult | null = null;
   error: string | null = null;
+
+  private pollingSubscription: Subscription | undefined;
 
   private metricsChart: Chart | undefined;
   private confusionChart: Chart | undefined;
 
   constructor(private apiService: ApiService) {}
 
-  ngAfterViewInit() {
-    // If results are already present (e.g., navigating back), render charts.
-    if (this.trainingResults) {
-      this.createCharts();
-    }
+  trainModel() {
+    this.isTraining = true;
+    this.trainingResults = null;
+    this.error = null;
+    this.trainingStatusMessage = 'Initiating training task...';
+
+    this.apiService.startTraining().subscribe({
+      next: (response) => {
+        this.pollForStatus(response.task_id);
+      },
+      error: (err) => {
+        this.isTraining = false;
+        this.error = `Failed to start training: ${err.message}`;
+      },
+    });
   }
 
-  trainModel() {
-  this.trainingResults = {
-    accuracy: 0.95,
-    precision: 0.93,
-    recall: 0.92,
-    f1Score: 0.925,
-    accuracyLossChart: [
-      { epoch: 1, accuracy: 0.8, loss: 0.5 },
-      { epoch: 2, accuracy: 0.85, loss: 0.4 },
-      { epoch: 3, accuracy: 0.9, loss: 0.3 },
-      { epoch: 4, accuracy: 0.93, loss: 0.2 },
-      { epoch: 5, accuracy: 0.95, loss: 0.1 }
-    ],
-    confusionMatrixChart: [
-      { name: 'True Positive', value: 800 },
-      { name: 'True Negative', value: 100 },
-      { name: 'False Positive', value: 50 },
-      { name: 'False Negative', value: 30 }
-    ]
-  };
-  this.createCharts();
-}
+  private pollForStatus(task_id: string) {
+    this.pollingSubscription = timer(0, 2000) // Poll every 2 seconds
+      .pipe(
+        switchMap(() => this.apiService.getTrainingStatus(task_id)),
+        // Keep polling until a final state is reached
+        takeWhile((res) => !['SUCCESS', 'FAILURE'].includes(res.status), true)
+      )
+      .subscribe({
+        next: (response) => {
+          if (response.status === 'PROGRESS' && response.progress) {
+            this.trainingStatusMessage = response.progress.status;
+          } else if (response.status === 'SUCCESS' && response.result) {
+            this.isTraining = false;
+            this.trainingResults = response.result;
+            this.createCharts();
+          } else if (response.status === 'FAILURE') {
+            this.isTraining = false;
+            this.error = `Training failed. Reason: ${
+              response.progress?.status || 'Unknown error'
+            }`;
+          }
+        },
+        error: (err) => {
+          this.isTraining = false;
+          this.error = `An error occurred while polling: ${err.message}`;
+        },
+      });
+  }
 
   proceedToNextStep() {
     if (this.trainingResults) {
@@ -68,10 +98,10 @@ export class Step3TrainingComponent implements AfterViewInit {
 
   private createCharts() {
     setTimeout(() => {
-      if (this.trainingResults?.accuracyLossChart) {
+      if (this.trainingResults?.training_chart) {
         this.createMetricsChart();
       }
-      if (this.trainingResults?.confusionMatrixChart) {
+      if (this.trainingResults?.confusion_matrix) {
         this.createConfusionChart();
       }
     }, 0);
@@ -80,11 +110,10 @@ export class Step3TrainingComponent implements AfterViewInit {
   private createMetricsChart() {
     const ctx = this.metricsChartCanvas.nativeElement.getContext('2d');
     if (!ctx || !this.trainingResults) return;
-
     if (this.metricsChart) this.metricsChart.destroy();
 
-    const data = this.trainingResults.accuracyLossChart;
-    const labels = data.map(d => `Epoch ${d.epoch}`);
+    const chartData = this.trainingResults.training_chart;
+    const labels = chartData.train_accuracy.map((d) => `Epoch ${d.x + 1}`);
 
     this.metricsChart = new Chart(ctx, {
       type: 'line',
@@ -93,50 +122,66 @@ export class Step3TrainingComponent implements AfterViewInit {
         datasets: [
           {
             label: 'Accuracy',
-            data: data.map(d => d.accuracy),
+            data: chartData.train_accuracy.map((d) => d.y),
             borderColor: 'hsl(142, 71%, 45%)',
-            backgroundColor: 'hsla(142, 71%, 45%, 0.1)',
-            tension: 0.1,
-            fill: true,
+            yAxisID: 'yAccuracy',
           },
           {
             label: 'Loss',
-            data: data.map(d => d.loss),
+            data: chartData.train_loss.map((d) => d.y),
             borderColor: 'hsl(0, 84%, 60%)',
-            backgroundColor: 'hsla(0, 84%, 60%, 0.1)',
-            tension: 0.1,
-            fill: true,
-          }
-        ]
+            yAxisID: 'yLoss',
+          },
+        ],
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          yAccuracy: { position: 'left' },
+          yLoss: { position: 'right' },
+        },
+      },
     });
   }
-
   private createConfusionChart() {
     const ctx = this.confusionChartCanvas.nativeElement.getContext('2d');
     if (!ctx || !this.trainingResults) return;
-
     if (this.confusionChart) this.confusionChart.destroy();
-    
-    const data = this.trainingResults.confusionMatrixChart;
+
+    const data = this.trainingResults.confusion_matrix;
 
     this.confusionChart = new Chart(ctx, {
       type: 'doughnut',
       data: {
-        labels: data.map(d => d.name),
-        datasets: [{
-          data: data.map(d => d.value),
-          backgroundColor: [
-            'hsl(142, 71%, 45%)', // True Positive
-            'hsl(217, 91%, 60%)', // True Negative
-            'hsl(38, 92%, 50%)',  // False Positive
-            'hsl(0, 84%, 60%)'    // False Negative
-          ],
-          borderWidth: 2,
-        }]
+        labels: [
+          'True Positives',
+          'True Negatives',
+          'False Positives',
+          'False Negatives',
+        ],
+        datasets: [
+          {
+            data: [
+              data.true_positives,
+              data.true_negatives,
+              data.false_positives,
+              data.false_negatives,
+            ],
+            backgroundColor: [
+              'hsl(142, 71%, 45%)',
+              'hsl(217, 91%, 60%)',
+              'hsl(38, 92%, 50%)',
+              'hsl(0, 84%, 60%)',
+            ],
+          },
+        ],
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: { responsive: true, maintainAspectRatio: false },
     });
+  }
+
+  ngOnDestroy(): void {
+    this.pollingSubscription?.unsubscribe();
   }
 }
