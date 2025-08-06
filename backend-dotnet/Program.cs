@@ -24,8 +24,13 @@ builder.Services.AddControllers();
 // Register the CsvProcessingService for dependency injection.
 builder.Services.AddScoped<ICsvProcessingService, CsvProcessingService>();
 
-// --- NEW: Register Training Service and HttpClientFactory ---
+// --- Register Training Service ---
 builder.Services.AddScoped<ITrainingService, TrainingService>();
+
+// --- Register Simulation Service ---
+builder.Services.AddScoped<ISimulationService, SimulationService>();
+
+// Register HttpClientFactory
 builder.Services.AddHttpClient("FastApiClient", client =>
 {
     var fastApiUrl = builder.Configuration.GetValue<string>("FastApiService:BaseUrl");
