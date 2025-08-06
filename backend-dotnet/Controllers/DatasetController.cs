@@ -4,6 +4,7 @@ namespace CsvProcessor.Controllers
     using CsvProcessor.Services;
     using Microsoft.AspNetCore.Mvc;
     using System;
+    using System.IO;
     using System.Threading.Tasks;
 
     [ApiController]
@@ -19,6 +20,9 @@ namespace CsvProcessor.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// Uploads a CSV file and returns metadata including timestamp range.
+        /// </summary>
         [HttpPost("upload")]
         [ProducesResponseType(typeof(DatasetMetadata), 200)]
         [ProducesResponseType(typeof(string), 400)]
@@ -46,5 +50,26 @@ namespace CsvProcessor.Controllers
                 return StatusCode(500, "An internal server error occurred. Please try again later.");
             }
         }
+
+        /// <summary>
+        /// Validates user-provided date ranges for training, testing, and simulation.
+        /// Returns record counts and monthly distribution for charting.
+        /// </summary>
+        [HttpPost("validate-date-ranges")]
+[ProducesResponseType(typeof(DateRangeValidationResponse), 200)]
+[ProducesResponseType(typeof(string), 500)]
+public async Task<IActionResult> ValidateDates([FromBody] DateRanges ranges)
+{
+    try
+    {
+        var response = await _csvProcessingService.ValidateDateRangesAsync(ranges);
+        return Ok(response);
+    }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error during date range validation.");
+        return StatusCode(500, "Date range validation failed.");
+    }
+}
     }
 }

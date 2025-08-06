@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, EventEmitter, Output, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
@@ -20,12 +20,12 @@ export class Step2DateRangesComponent {
   @ViewChild('monthlyDistChart') monthlyDistChartCanvas!: ElementRef<HTMLCanvasElement>;
 
   ranges: DateRanges = {
-    trainStart: '2022-01-01',
-    trainEnd: '2022-09-30',
-    testStart: '2022-10-01',
-    testEnd: '2022-11-30',
-    simulationStart: '2022-12-01',
-    simulationEnd: '2022-12-31'
+    trainStart: '',
+    trainEnd: '',
+    testStart: '',
+    testEnd: '',
+    simulationStart: '',
+    simulationEnd: ''
   };
 
   isValidating = false;
@@ -36,32 +36,33 @@ export class Step2DateRangesComponent {
   constructor(private apiService: ApiService) {}
 
   validateRanges() {
-  this.validationResponse = {
-    status: 'Valid',
-    message: 'Valid ranges.',
-    trainRecordCount: 50000,
-    testRecordCount: 20000,
-    simulationRecordCount: 10000,
-    trainDurationDays: 273,
-    testDurationDays: 61,
-    simulationDurationDays: 31,
-    monthlyDistribution: {
-      'Jan': 5000,
-      'Feb': 4500,
-      'Mar': 4700,
-      'Apr': 4300,
-      'May': 4000,
-      'Jun': 4100,
-      'Jul': 4600,
-      'Aug': 4800,
-      'Sep': 4500,
-      'Oct': 3000,
-      'Nov': 3000,
-      'Dec': 3000
+    if (!this.isAllDatesProvided()) {
+      this.error = 'All date ranges must be filled before validation.';
+      return;
     }
-  };
-  this.createMonthlyDistChart();
-}
+
+    this.isValidating = true;
+    this.error = null;
+
+    this.apiService.validateDateRanges(this.ranges)
+      .pipe(finalize(() => this.isValidating = false))
+      .subscribe({
+        next: (response) => {
+          if (response.status === 'Valid') {
+            this.validationResponse = response;
+            this.createMonthlyDistChart();
+          } else {
+            this.validationResponse = null;
+            this.error = response.message || 'Date ranges are not valid.';
+          }
+        },
+        error: (err) => {
+          this.error = 'Failed to validate date ranges.';
+          console.error(err);
+          this.validationResponse = null;
+        }
+      });
+  }
 
   proceedToNextStep() {
     if (this.validationResponse?.status === 'Valid') {
@@ -69,15 +70,22 @@ export class Step2DateRangesComponent {
     }
   }
 
-  private createMonthlyDistChart() {
-    // Assign the distribution to a const to help TypeScript's type inference
-    const distributionData = this.validationResponse?.monthlyDistribution;
+  private isAllDatesProvided(): boolean {
+  const r = this.ranges;
+  return Boolean(
+    r.trainStart &&
+    r.trainEnd &&
+    r.testStart &&
+    r.testEnd &&
+    r.simulationStart &&
+    r.simulationEnd
+  );
+}
 
-    // FIX: Use the new const for the null check
-    if (!distributionData) {
-      return;
-    }
-    
+  private createMonthlyDistChart() {
+    const distributionData = this.validationResponse?.monthlyDistribution;
+    if (!distributionData) return;
+
     setTimeout(() => {
       const ctx = this.monthlyDistChartCanvas.nativeElement.getContext('2d');
       if (!ctx) return;
@@ -86,9 +94,17 @@ export class Step2DateRangesComponent {
         this.chart.destroy();
       }
 
-      // FIX: Use the non-null const for chart data creation
       const labels = Object.keys(distributionData).sort();
       const data = labels.map(label => distributionData[label]);
+
+      const backgroundColors = labels.map(label => {
+        if (this.isInRange(label, this.ranges.trainStart, this.ranges.trainEnd)) return 'rgba(0, 128, 0, 0.6)';     // Green
+        if (this.isInRange(label, this.ranges.testStart, this.ranges.testEnd)) return 'rgba(255, 165, 0, 0.6)';     // Orange
+        if (this.isInRange(label, this.ranges.simulationStart, this.ranges.simulationEnd)) return 'rgba(30, 144, 255, 0.6)'; // Blue
+        return 'rgba(200, 200, 200, 0.4)'; // fallback muted
+      });
+
+      const borderColors = backgroundColors.map(c => c.replace('0.6', '1'));
 
       this.chart = new Chart(ctx, {
         type: 'bar',
@@ -97,8 +113,8 @@ export class Step2DateRangesComponent {
           datasets: [{
             label: 'Record Count',
             data: data,
-            backgroundColor: 'hsla(var(--primary), 0.6)',
-            borderColor: 'hsl(var(--primary))',
+            backgroundColor: backgroundColors,
+            borderColor: borderColors,
             borderWidth: 1
           }]
         },
@@ -110,5 +126,20 @@ export class Step2DateRangesComponent {
         }
       });
     }, 0);
+  }
+
+  private isInRange(monthLabel: string, startDate: string, endDate: string): boolean {
+    const monthMap: { [key: string]: number } = {
+      Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
+      Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
+    };
+    const monthIndex = monthMap[monthLabel];
+    if (monthIndex === undefined) return false;
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const midMonth = new Date(start.getFullYear(), monthIndex, 15);
+
+    return midMonth >= start && midMonth <= end;
   }
 }

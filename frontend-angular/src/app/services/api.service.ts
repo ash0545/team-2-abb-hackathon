@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { DatasetMetadata } from '../models/api.models';
+import { DatasetMetadata, DateRanges, DateRangeValidationResponse } from '../models/api.models';
 
 @Injectable({
   providedIn: 'root'
@@ -26,6 +26,18 @@ export class ApiService {
     // FIX 2: The post URL is now correctly constructed by combining the base apiUrl
     // with the specific endpoint path.
     return this.http.post<DatasetMetadata>(`${this.apiUrl}/dataset/upload`, formData)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Validates the date ranges for training, testing, and simulation.
+   * @param ranges Object containing 3 date ranges.
+   * @returns Validation summary and monthly distribution.
+   */
+  validateDateRanges(ranges: DateRanges): Observable<DateRangeValidationResponse> {
+    return this.http.post<DateRangeValidationResponse>(`${this.apiUrl}/dataset/validate-date-ranges`, ranges)
       .pipe(
         catchError(this.handleError)
       );

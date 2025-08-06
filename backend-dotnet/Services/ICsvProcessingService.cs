@@ -6,5 +6,6 @@ namespace CsvProcessor.Services
     public interface ICsvProcessingService
     {
         Task<DatasetMetadata> ProcessCsvFileAsync(IFormFile file);
+        Task<DateRangeValidationResponse> ValidateDateRangesAsync(DateRanges ranges);
     }
 }
