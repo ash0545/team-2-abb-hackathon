@@ -55,3 +55,31 @@ table {
     opacity: .5;
   }
 }
+
+.dark-mode {
+  .status-pulse {
+    background-color: hsl(var(--primary));
+  }
+
+  table {
+    th, td {
+      border-bottom: 1px solid hsl(var(--border));
+    }
+
+    th {
+      color: hsl(var(--muted-foreground));
+    }
+  }
+
+  .badge {
+    &.pass {
+      background-color: hsla(var(--success), 0.15); // slightly higher contrast for dark
+      color: hsl(var(--success));
+    }
+
+    &.fail {
+      background-color: hsla(var(--destructive), 0.15);
+      color: hsl(var(--destructive));
+    }
+  }
+}

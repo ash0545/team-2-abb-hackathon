@@ -47,3 +47,18 @@
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
+// 🌙 Dark Mode Overrides
+.dark-mode {
+  .progress-bar {
+    background-color: hsl(var(--muted));
+  }
+
+  .progress-bar-fill {
+    background-color: hsl(var(--primary));
+  }
+
+  .icon.large.primary {
+    color: hsl(var(--primary));
+  }
+}

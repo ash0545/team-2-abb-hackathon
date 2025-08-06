@@ -60,3 +60,27 @@
   animation: spin 1s linear infinite;
   display: inline-block;
 }
+
+// 🌙 Dark Mode Support
+.dark-mode {
+  .date-inputs {
+    label {
+      color: hsl(var(--muted-foreground));
+    }
+
+    input[type="date"] {
+      background-color: hsl(var(--input));
+      color: hsl(var(--foreground));
+      border-color: hsl(var(--border));
+    }
+  }
+
+  .validation-message {
+    &.success {
+      color: hsl(var(--success));
+    }
+    &.error {
+      color: hsl(var(--destructive));
+    }
+  }
+}

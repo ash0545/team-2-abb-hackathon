@@ -79,3 +79,30 @@ body {
     max-width: 1536px;
   }
 }
+// styles.scss
+.dark-mode {
+  --background: 0, 0%, 10%;
+  --foreground: 0, 0%, 90%;
+
+  --card: 0, 0%, 12%;
+  --card-foreground: 0, 0%, 90%;
+
+  --primary: 0, 84%, 60%;
+  --primary-foreground: 0, 0%, 100%;
+
+  --secondary: 0, 0%, 20%;
+  --secondary-foreground: 0, 0%, 95%;
+
+  --muted: 0, 0%, 25%;
+  --muted-foreground: 0, 0%, 70%;
+
+  --accent: 0, 0%, 30%;
+  --accent-foreground: 0, 0%, 90%;
+
+  --success: 142, 71%, 40%;
+  --success-foreground: 0, 0%, 100%;
+
+  --border: 0, 0%, 30%;
+  --input: 0, 0%, 20%;
+  --ring: 0, 84%, 60%;
+}

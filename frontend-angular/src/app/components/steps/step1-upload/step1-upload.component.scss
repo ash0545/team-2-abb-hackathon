@@ -53,4 +53,33 @@
     grid-column: span 4;
   }
 }
+.dark-mode {
+  .drop-zone {
+    border-color: hsl(var(--border));
 
+    &:hover {
+      border-color: hsla(var(--primary), 0.5);
+    }
+
+    &.drag-over {
+      border-color: hsl(var(--primary));
+      background-color: hsla(var(--primary), 0.1); // slightly higher contrast
+    }
+  }
+
+  .status-indicator {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .prompt-title {
+    color: hsl(var(--foreground));
+  }
+
+  .prompt-subtitle {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .file-input {
+    // remains transparent, no changes needed
+  }
+}

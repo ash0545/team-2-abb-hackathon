@@ -1,6 +1,7 @@
-import { Component, Input } from '@angular/core';
+// header.component.ts
+import { Component, Input, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Step } from './header.component.model'; // ✅ Correct path now
+import { Step } from './header.component.model';
 
 @Component({
   selector: 'app-header',
@@ -13,9 +14,18 @@ export class HeaderComponent {
   @Input() currentStep!: number;
   @Input() steps: Step[] = [];
 
-  constructor() {
+  darkMode = false;
+
+  constructor(private renderer: Renderer2) {
     console.log('📢 HeaderComponent rendered!');
   }
-}
-export type { Step };
 
+  toggleDarkMode(): void {
+    this.darkMode = !this.darkMode;
+    if (this.darkMode) {
+      this.renderer.addClass(document.body, 'dark-mode');
+    } else {
+      this.renderer.removeClass(document.body, 'dark-mode');
+    }
+  }
+}

@@ -98,3 +98,16 @@
   border-radius: 0.5rem;
   font-weight: 500;
 }
+.toggle-theme-btn {
+  background: none;
+  border: 1px solid hsl(var(--border));
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  transition: background 0.3s ease;
+
+  &:hover {
+    background: hsl(var(--muted));
+  }
+}
