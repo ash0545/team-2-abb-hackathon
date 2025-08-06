@@ -1,11 +1,12 @@
 import uvicorn
 from fastapi import FastAPI
-from routes import dataset_routes, training_routes
+from routes import dataset_routes, training_routes, simulation_routes
 
 app = FastAPI(title="ML Microservice - ABB Hackathon")
 
 app.include_router(dataset_routes.router)
 app.include_router(training_routes.router)
+app.include_router(simulation_routes.router)
 
 
 @app.get("/")
