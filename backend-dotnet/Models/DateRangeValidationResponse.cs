@@ -1,7 +1,4 @@
-using System.Collections.Generic;
-using CsvProcessor.Models;
-
-namespace CsvProcessor.Models
+namespace QualityControl.Models
 {
     public class DateRangeValidationResponse
     {

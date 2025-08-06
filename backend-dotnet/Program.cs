@@ -1,7 +1,6 @@
-// Program.cs
 // Entry point for the .NET Web API. Configures services, CORS, and routing.
 
-using CsvProcessor.Services;
+using QualityControl.Services;
 using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,12 +16,25 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 {
     serverOptions.Limits.MaxRequestBodySize = 2L * 1024 * 1024 * 1024; // 2 GB
 });
+
 // --- Service Configuration ---
 // Add controllers to the service container.
 builder.Services.AddControllers();
 
 // Register the CsvProcessingService for dependency injection.
 builder.Services.AddScoped<ICsvProcessingService, CsvProcessingService>();
+
+// --- NEW: Register Training Service and HttpClientFactory ---
+builder.Services.AddScoped<ITrainingService, TrainingService>();
+builder.Services.AddHttpClient("FastApiClient", client =>
+{
+    var fastApiUrl = builder.Configuration.GetValue<string>("FastApiService:BaseUrl");
+    if (string.IsNullOrEmpty(fastApiUrl))
+    {
+        throw new InvalidOperationException("FastAPI service base URL is not configured in appsettings.json");
+    }
+    client.BaseAddress = new Uri(fastApiUrl);
+});
 
 // Configure CORS (Cross-Origin Resource Sharing) to allow requests
 // from the Angular development server.

@@ -1,7 +1,7 @@
-namespace CsvProcessor.Controllers
+namespace QualityControl.Controllers
 {
-    using CsvProcessor.Models;
-    using CsvProcessor.Services;
+    using QualityControl.Models;
+    using QualityControl.Services;
     using Microsoft.AspNetCore.Mvc;
     using System;
     using System.IO;
@@ -56,20 +56,20 @@ namespace CsvProcessor.Controllers
         /// Returns record counts and monthly distribution for charting.
         /// </summary>
         [HttpPost("validate-date-ranges")]
-[ProducesResponseType(typeof(DateRangeValidationResponse), 200)]
-[ProducesResponseType(typeof(string), 500)]
-public async Task<IActionResult> ValidateDates([FromBody] DateRanges ranges)
-{
-    try
-    {
-        var response = await _csvProcessingService.ValidateDateRangesAsync(ranges);
-        return Ok(response);
-    }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error during date range validation.");
-        return StatusCode(500, "Date range validation failed.");
-    }
-}
+        [ProducesResponseType(typeof(DateRangeValidationResponse), 200)]
+        [ProducesResponseType(typeof(string), 500)]
+        public async Task<IActionResult> ValidateDates([FromBody] DateRanges ranges)
+        {
+            try
+            {
+                var response = await _csvProcessingService.ValidateDateRangesAsync(ranges);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during date range validation.");
+                return StatusCode(500, "Date range validation failed.");
+            }
+        }
     }
 }

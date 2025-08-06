@@ -1,8 +1,8 @@
 using CsvHelper;
-using CsvProcessor.Models;
+using QualityControl.Models;
 using System.Globalization;
 
-namespace CsvProcessor.Services
+namespace QualityControl.Services
 {
     public class CsvProcessingService : ICsvProcessingService
     {

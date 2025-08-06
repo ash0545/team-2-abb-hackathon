@@ -1,6 +1,6 @@
-namespace CsvProcessor.Services
+namespace QualityControl.Services
 {
-    using CsvProcessor.Models; // <--- THIS IS THE FIX
+    using QualityControl.Models; // <--- THIS IS THE FIX
     using Microsoft.AspNetCore.Http;
     using System.Threading.Tasks;
     public interface ICsvProcessingService
