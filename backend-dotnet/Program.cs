@@ -30,15 +30,21 @@ builder.Services.AddScoped<ITrainingService, TrainingService>();
 // --- Register Simulation Service ---
 builder.Services.AddScoped<ISimulationService, SimulationService>();
 
+builder.Services.AddSingleton<IMetadataService, MetadataService>();
+
 // Register HttpClientFactory
 builder.Services.AddHttpClient("FastApiClient", client =>
 {
-    var fastApiUrl = builder.Configuration.GetValue<string>("FastApiService:BaseUrl");
+    var fastApiUrl = builder.Configuration.GetValue<string>("PythonService:BaseUrl");
     if (string.IsNullOrEmpty(fastApiUrl))
     {
         throw new InvalidOperationException("FastAPI service base URL is not configured in appsettings.json");
     }
     client.BaseAddress = new Uri(fastApiUrl);
+    client.Timeout = TimeSpan.FromMinutes(30); // Extended timeout for large file uploads
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler()
+{
+    MaxRequestContentBufferSize = int.MaxValue // Allow large request bodies
 });
 
 // Configure CORS (Cross-Origin Resource Sharing) to allow requests

@@ -1,133 +1,263 @@
-using CsvHelper;
 using QualityControl.Models;
-using System.Globalization;
+using System.Text;
+using System.Net.Http.Headers;
+using System.Net;
+namespace QualityControl.Services;
 
-namespace QualityControl.Services
+public class CsvProcessingService : ICsvProcessingService
 {
-    public class CsvProcessingService : ICsvProcessingService
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<CsvProcessingService> _logger;
+    private readonly IMetadataService _metadataService;
+    private readonly IConfiguration _configuration;
+    private readonly string _tempFileDirectory;
+
+    public CsvProcessingService(
+        IHttpClientFactory httpClientFactory,
+        IConfiguration configuration,
+        ILogger<CsvProcessingService> logger,
+        IMetadataService metadataService)
     {
-        private static List<Dictionary<string, string>> _cachedData = new();
-        private static bool _isDataLoaded = false;
+        _httpClientFactory = httpClientFactory;
+        _logger = logger;
+        _metadataService = metadataService;
+        _configuration = configuration;
+        _tempFileDirectory = Path.Combine(Directory.GetCurrentDirectory(), "storage", "temp");
+        Directory.CreateDirectory(_tempFileDirectory);
+    }
 
-        public async Task<DatasetMetadata> ProcessCsvFileAsync(IFormFile file)
+    private string GetTempFilePath() => Path.Combine(_tempFileDirectory, $"{Guid.NewGuid()}.tmp");
+
+    public async Task<DatasetMetadata> ProcessAndForwardCsvAsync(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            throw new ArgumentException("File is empty or null.");
+
+        var tempFilePath = GetTempFilePath();
+        _logger.LogInformation("Starting CSV processing. Temp file: {TempPath}", tempFilePath);
+
+        try
         {
-            if (file == null || file.Length == 0)
-                throw new ArgumentException("File is empty or null.");
+            var metadata = await ProcessAndWriteToTempFileAsync(file, tempFilePath);
 
-            using var reader = new StreamReader(file.OpenReadStream());
-            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+            _logger.LogInformation(
+                "Metadata calculated: Records={Records}, Columns={Cols}, PassRate={PassRate}%, Range={Start} to {End}",
+                metadata.NumberOfRecords, metadata.NumberOfColumns, metadata.PassRatePercentage,
+                metadata.FirstTimestamp, metadata.LastTimestamp
+            );
 
-            await csv.ReadAsync();
-            csv.ReadHeader();
-            var headers = csv.HeaderRecord;
+            await ForwardTempFileToPythonServiceAsync(file.FileName, tempFilePath);
 
-            if (headers == null || !headers.Contains("Response", StringComparer.OrdinalIgnoreCase))
-                throw new InvalidDataException("CSV must contain a 'Response' column.");
+            await _metadataService.SaveMetadataAsync(metadata);
 
-            long recordCount = 0;
-            long passCount = 0;
-            DateTime? firstTimestamp = null;
-            DateTime lastTimestamp = DateTime.MinValue;
-            bool hasTimestampColumn = headers.Contains("Timestamp", StringComparer.OrdinalIgnoreCase);
-
-            _cachedData.Clear(); // Clear existing cache
-            _isDataLoaded = false;
-
-            while (await csv.ReadAsync())
-            {
-                var record = csv.GetRecord<dynamic>();
-                var dict = new Dictionary<string, string>();
-
-                foreach (var header in headers)
-                {
-                    dict[header] = csv.GetField(header)?.Trim();
-                }
-
-                _cachedData.Add(dict);
-
-                recordCount++;
-
-                if (dict.TryGetValue("Response", out var responseVal) && responseVal == "1")
-                    passCount++;
-
-                if (hasTimestampColumn && dict.TryGetValue("Timestamp", out var tsVal) &&
-                    DateTime.TryParse(tsVal, out DateTime parsed))
-                {
-                    if (!firstTimestamp.HasValue)
-                        firstTimestamp = parsed;
-
-                    lastTimestamp = parsed;
-                }
-            }
-
-            _isDataLoaded = true;
-
-            var first = hasTimestampColumn && firstTimestamp.HasValue
-                ? firstTimestamp.Value
-                : new DateTime(2021, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
-            var last = hasTimestampColumn && firstTimestamp.HasValue
-                ? lastTimestamp
-                : first.AddSeconds(recordCount > 0 ? recordCount - 1 : 0);
-
-            return new DatasetMetadata
-            {
-                NumberOfRecords = recordCount,
-                NumberOfColumns = headers.Length,
-                PassRatePercentage = recordCount > 0 ? Math.Round((double)passCount / recordCount * 100, 2) : 0,
-                FirstTimestamp = first.ToString("o"),
-                LastTimestamp = last.ToString("o"),
-                FileName = file.FileName,
-                FileSize = $"{((double)file.Length / (1024 * 1024)):F2} MB"
-            };
+            return metadata;
         }
-
-        public async Task<DateRangeValidationResponse> ValidateDateRangesAsync(DateRanges ranges)
+        finally
         {
-            if (!_isDataLoaded || _cachedData.Count == 0)
-                throw new InvalidOperationException("No dataset loaded. Upload a dataset first.");
-
-            int trainCount = 0, testCount = 0, simCount = 0;
-            var monthlyDist = new Dictionary<string, int>();
-
-            DateTime trainStart = DateTime.Parse(ranges.TrainStart);
-            DateTime trainEnd = DateTime.Parse(ranges.TrainEnd);
-            DateTime testStart = DateTime.Parse(ranges.TestStart);
-            DateTime testEnd = DateTime.Parse(ranges.TestEnd);
-            DateTime simStart = DateTime.Parse(ranges.SimulationStart);
-            DateTime simEnd = DateTime.Parse(ranges.SimulationEnd);
-
-            foreach (var record in _cachedData)
+            if (File.Exists(tempFilePath))
             {
-                if (!record.TryGetValue("Timestamp", out var tsStr)) continue;
-                if (!DateTime.TryParse(tsStr, out DateTime ts)) continue;
-
-                string month = ts.ToString("MMM", CultureInfo.InvariantCulture);
-                if (!monthlyDist.ContainsKey(month))
-                    monthlyDist[month] = 0;
-                monthlyDist[month]++;
-
-                if (ts >= trainStart && ts <= trainEnd) trainCount++;
-                else if (ts >= testStart && ts <= testEnd) testCount++;
-                else if (ts >= simStart && ts <= simEnd) simCount++;
+                File.Delete(tempFilePath);
+                _logger.LogInformation("Deleted temporary file: {TempPath}", tempFilePath);
             }
-
-            int trainDays = (trainEnd - trainStart).Days + 1;
-            int testDays = (testEnd - testStart).Days + 1;
-            int simDays = (simEnd - simStart).Days + 1;
-
-            return new DateRangeValidationResponse
-            {
-                Status = "Valid",
-                Message = "Date ranges are valid.",
-                TrainRecordCount = trainCount,
-                TestRecordCount = testCount,
-                SimulationRecordCount = simCount,
-                TrainDurationDays = trainDays,
-                TestDurationDays = testDays,
-                SimulationDurationDays = simDays,
-                MonthlyDistribution = monthlyDist
-            };
         }
     }
+
+    private async Task<DatasetMetadata> ProcessAndWriteToTempFileAsync(IFormFile file, string tempFilePath)
+    {
+        long recordCount = 0;
+        long zeroResponseCount = 0;
+        int responseColumnIndex = -1;
+        string[] headers = Array.Empty<string>();
+        var startDate = DateTime.UtcNow;
+        var firstTimestamp = startDate;
+        var lastTimestamp = startDate;
+
+        await using var readStream = file.OpenReadStream();
+        using var reader = new StreamReader(readStream);
+        await using var writer = new StreamWriter(tempFilePath, false, Encoding.UTF8);
+
+        var headerLine = await reader.ReadLineAsync() ?? throw new InvalidDataException("CSV is empty.");
+        headers = headerLine.Split(',');
+        responseColumnIndex = Array.FindIndex(headers, h => h.Trim().Equals("Response", StringComparison.OrdinalIgnoreCase));
+        if (responseColumnIndex == -1) throw new InvalidDataException("CSV must contain a 'Response' column.");
+
+        await writer.WriteLineAsync($"synthetic_timestamp,{headerLine}");
+
+        string? line;
+        while ((line = await reader.ReadLineAsync()) != null)
+        {
+            if (string.IsNullOrWhiteSpace(line)) continue;
+            recordCount++;
+            var currentTimestamp = startDate.AddSeconds(recordCount - 1);
+            await writer.WriteLineAsync($"{currentTimestamp:yyyy-MM-dd HH:mm:ss},{line}");
+            var values = line.Split(',');
+            if (values.Length > responseColumnIndex && values[responseColumnIndex].Trim() == "0")
+            {
+                zeroResponseCount++;
+            }
+        }
+
+        lastTimestamp = startDate.AddSeconds(recordCount > 0 ? recordCount - 1 : 0);
+        _logger.LogInformation("Finished processing {RecordCount} records to temporary file.", recordCount);
+
+        return new DatasetMetadata
+        {
+            NumberOfRecords = recordCount,
+            NumberOfColumns = headers.Length + 1,
+            PassRatePercentage = recordCount > 0 ? Math.Round((double)zeroResponseCount / recordCount * 100, 2) : 0,
+            FirstTimestamp = firstTimestamp.ToString("o"),
+            LastTimestamp = lastTimestamp.ToString("o"),
+            FileName = file.FileName,
+            FileSize = $"{((double)file.Length / (1024 * 1024)):F2} MB"
+        };
+    }
+
+    private async Task ForwardTempFileToPythonServiceAsync(string fileName, string tempFilePath)
+    {
+        var pythonServiceUrl = $"{_configuration["PythonService:BaseUrl"]}{_configuration["PythonService:DatasetStoreEndpoint"]}";
+
+        var client = _httpClientFactory.CreateClient("PythonApiClient");
+
+        // Ensure client timeout is set (this should be configured in DI, but double-check)
+        if (client.Timeout == TimeSpan.FromSeconds(100))
+        {
+            _logger.LogWarning("HttpClient timeout is still 100 seconds, overriding to 30 minutes");
+            client.Timeout = TimeSpan.FromMinutes(30);
+        }
+
+        var fileInfo = new FileInfo(tempFilePath);
+        var totalBytes = fileInfo.Length;
+
+        _logger.LogInformation("Starting upload of {FileName} ({SizeMB:F2} MB) to Python service...",
+            fileName, totalBytes / (1024.0 * 1024.0));
+
+        try
+        {
+            // Create progress tracking content
+            using var fileStream = new FileStream(tempFilePath, FileMode.Open, FileAccess.Read);
+            using var progressContent = new ProgressStreamContent(fileStream, totalBytes, progress =>
+            {
+                _logger.LogInformation("Upload progress: {Progress:F1}% ({BytesSent:F2}MB / {TotalMB:F2}MB)",
+                    progress.Percentage,
+                    progress.BytesSent / (1024.0 * 1024.0),
+                    progress.TotalBytes / (1024.0 * 1024.0));
+            });
+
+            using var multipartContent = new MultipartFormDataContent();
+
+            // Set proper headers
+            progressContent.Headers.ContentType = MediaTypeHeaderValue.Parse("text/csv");
+            progressContent.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data")
+            {
+                Name = "\"file\"",
+                FileName = $"\"{fileName}\""
+            };
+
+            multipartContent.Add(progressContent);
+
+            // Send with progress tracking
+            var response = await client.PostAsync(pythonServiceUrl, multipartContent);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("FastAPI service returned error: {StatusCode} - {Content}",
+                    response.StatusCode, errorContent);
+                throw new HttpRequestException($"FastAPI service returned {response.StatusCode}: {errorContent}");
+            }
+
+            _logger.LogInformation("Successfully uploaded {FileName} to Python service", fileName);
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            _logger.LogError("Upload timed out after {Timeout} minutes", client.Timeout.TotalMinutes);
+            throw new HttpRequestException($"Upload timed out after {client.Timeout.TotalMinutes} minutes", ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upload file to Python service");
+            throw;
+        }
+    }
+
+    public Task<DateRangeValidationResponse> ValidateDateRangesAsync(DateRanges ranges)
+    {
+        throw new NotImplementedException("Date range validation is now handled by the Python service.");
+    }
+}
+
+// Custom HttpContent for progress tracking
+public class ProgressStreamContent : HttpContent
+{
+    private readonly Stream _stream;
+    private readonly long _totalBytes;
+    private readonly Action<UploadProgress> _onProgress;
+    private long _bytesSent = 0;
+
+    public ProgressStreamContent(Stream stream, long totalBytes, Action<UploadProgress> onProgress)
+    {
+        _stream = stream ?? throw new ArgumentNullException(nameof(stream));
+        _totalBytes = totalBytes;
+        _onProgress = onProgress;
+    }
+
+#if NET5_0_OR_GREATER
+    protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+    {
+        return SerializeToStreamInternalAsync(stream, context);
+    }
+#else
+    protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+    {
+        return SerializeToStreamInternalAsync(stream, context);
+    }
+#endif
+
+    private async Task SerializeToStreamInternalAsync(Stream stream, TransportContext? context)
+    {
+        const int bufferSize = 64 * 1024; // 64KB chunks
+        var buffer = new byte[bufferSize];
+        int bytesRead;
+
+        while ((bytesRead = await _stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+        {
+            await stream.WriteAsync(buffer, 0, bytesRead);
+            _bytesSent += bytesRead;
+
+            // Report progress every 10MB or at the end
+            if (_bytesSent % (10 * 1024 * 1024) == 0 || _bytesSent >= _totalBytes)
+            {
+                var progress = new UploadProgress
+                {
+                    BytesSent = _bytesSent,
+                    TotalBytes = _totalBytes,
+                    Percentage = (_bytesSent * 100.0) / _totalBytes
+                };
+
+                _onProgress?.Invoke(progress);
+            }
+        }
+    }
+
+    protected override bool TryComputeLength(out long length)
+    {
+        length = _totalBytes;
+        return true;
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _stream?.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+}
+
+public class UploadProgress
+{
+    public long BytesSent { get; set; }
+    public long TotalBytes { get; set; }
+    public double Percentage { get; set; }
 }

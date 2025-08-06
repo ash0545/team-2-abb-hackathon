@@ -1,12 +1,9 @@
+using QualityControl.Models;
+using QualityControl.Services;
+using Microsoft.AspNetCore.Mvc;
+
 namespace QualityControl.Controllers
 {
-    using QualityControl.Models;
-    using QualityControl.Services;
-    using Microsoft.AspNetCore.Mvc;
-    using System;
-    using System.IO;
-    using System.Threading.Tasks;
-
     [ApiController]
     [Route("api/[controller]")]
     public class DatasetController : ControllerBase
@@ -20,13 +17,13 @@ namespace QualityControl.Controllers
             _logger = logger;
         }
 
-        /// <summary>
-        /// Uploads a CSV file and returns metadata including timestamp range.
-        /// </summary>
         [HttpPost("upload")]
         [ProducesResponseType(typeof(DatasetMetadata), 200)]
         [ProducesResponseType(typeof(string), 400)]
         [ProducesResponseType(typeof(string), 500)]
+        // Add this attribute to disable the default request body size limit for this specific action
+        [RequestSizeLimit(3_000_000_000)] // ~3 GB limit
+        [RequestFormLimits(MultipartBodyLengthLimit = 3_000_000_000)]
         public async Task<IActionResult> UploadDataset(IFormFile file)
         {
             if (file == null || file.Length == 0)
@@ -36,7 +33,8 @@ namespace QualityControl.Controllers
 
             try
             {
-                var metadata = await _csvProcessingService.ProcessCsvFileAsync(file);
+                // Use the new streaming method
+                var metadata = await _csvProcessingService.ProcessAndForwardCsvAsync(file);
                 return Ok(metadata);
             }
             catch (InvalidDataException ex)
