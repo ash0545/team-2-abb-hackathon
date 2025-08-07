@@ -59,6 +59,7 @@ class DataSplitResponse(BaseModel):
     test_set_rows: int
     simulation_set_path: str
     simulation_set_rows: int
+    daily_distribution: Dict[str, int]
 
 
 # --- Stage 3 ---
