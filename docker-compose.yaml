@@ -6,13 +6,16 @@ services:
       context: ./backend-dotnet
       dockerfile: Dockerfile
     ports:
-      - "5000:80"
+      - "5000:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - PythonService__BaseUrl=http://ml-service:8000
     volumes:
       - ./storage:/app/storage
     depends_on:
       - ml-service
+    networks:
+      - app-network
 
   frontend:
     build:
@@ -31,13 +34,23 @@ services:
       - "8000:8000"
     volumes:
       - ./storage:/app/storage
+    depends_on:
+      - redis
     environment:
       - PYTHONUNBUFFERED=1
+    networks:
+      - app-network
 
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
+    networks:
+      - app-network
 
 volumes:
   storage:
+
+networks:
+  app-network:
+    driver: bridge

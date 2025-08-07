@@ -3,10 +3,8 @@ import os
 # --- Celery Configuration ---
 # Using Redis as the message broker and result backend.
 # Assumes Redis is running on localhost:6379. This will be 'redis:6379' in Docker.
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get(
-    "CELERY_RESULT_BACKEND", "redis://localhost:6379/0"
-)
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "http://redis:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "http://redis:6379/0")
 
 # --- Directory and File Paths ---
 # Base directory for storing all persistent data

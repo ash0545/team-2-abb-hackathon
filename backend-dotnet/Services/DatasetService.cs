@@ -84,7 +84,7 @@ public class DatasetService : IDatasetService
         };
 
         var client = _httpClientFactory.CreateClient("PythonApiClient");
-        var endpoint = "http://localhost:8000/process/split-data";
+        var endpoint = "http://ml-service:8000/process/split-data";
         var response = await client.PostAsJsonAsync(endpoint, requestDto);
 
         if (!response.IsSuccessStatusCode)
