@@ -79,7 +79,7 @@ This is the simplest way to get the entire application running.
 
     ```bash
     git clone https://github.com/ash0545/team-2-abb-hackathon.git
-    cd https://github.com/ash0545/team-2-abb-hackathon.git
+    cd team-2-abb-hackathon
     ```
 
 2. **Build and run the services using Docker Compose:**
