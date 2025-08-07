@@ -1,3 +1,4 @@
+```mermaid
 graph TD
 
 %% CLIENT LAYER
@@ -47,3 +48,4 @@ C13 --> A1
 B7 --> D1[(In-Memory Dataset)]
 C8 --> D2[(Model Artifacts)]
 C9 --> D3[(Evaluation Results)]
+
