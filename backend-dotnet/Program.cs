@@ -24,6 +24,9 @@ builder.Services.AddControllers();
 // Register the CsvProcessingService for dependency injection.
 builder.Services.AddScoped<ICsvProcessingService, CsvProcessingService>();
 
+// --- Register Dataset Service ---
+builder.Services.AddScoped<IDatasetService, DatasetService>();
+
 // --- Register Training Service ---
 builder.Services.AddScoped<ITrainingService, TrainingService>();
 

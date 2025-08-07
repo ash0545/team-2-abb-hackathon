@@ -9,11 +9,13 @@ namespace QualityControl.Controllers
     public class DatasetController : ControllerBase
     {
         private readonly ICsvProcessingService _csvProcessingService;
+        private readonly IDatasetService _datasetService;
         private readonly ILogger<DatasetController> _logger;
 
-        public DatasetController(ICsvProcessingService csvProcessingService, ILogger<DatasetController> logger)
+        public DatasetController(ICsvProcessingService csvProcessingService, IDatasetService datasetService, ILogger<DatasetController> logger)
         {
             _csvProcessingService = csvProcessingService;
+            _datasetService = datasetService;
             _logger = logger;
         }
 
@@ -49,24 +51,30 @@ namespace QualityControl.Controllers
             }
         }
 
-        /// <summary>
-        /// Validates user-provided date ranges for training, testing, and simulation.
-        /// Returns record counts and monthly distribution for charting.
-        /// </summary>
-        [HttpPost("validate-date-ranges")]
-        [ProducesResponseType(typeof(DateRangeValidationResponse), 200)]
-        [ProducesResponseType(typeof(string), 500)]
-        public async Task<IActionResult> ValidateDates([FromBody] DateRanges ranges)
+        [HttpPost("validate-ranges")]
+        public async Task<IActionResult> ValidateRanges([FromBody] DateRanges ranges)
+        {
+            var response = await _datasetService.ValidateDateRangesAsync(ranges);
+            if (response.Status != "Valid")
+                return BadRequest(response);
+            return Ok(response);
+        }
+
+        [HttpPost("split-data")]
+        public async Task<IActionResult> SplitData([FromBody] DateRanges ranges)
         {
             try
             {
-                var response = await _csvProcessingService.ValidateDateRangesAsync(ranges);
+                var response = await _datasetService.SplitDataAsync(ranges);
+                if (response == null)
+                    return StatusCode(500, "Failed to split data in the ML service.");
+
                 return Ok(response);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during date range validation.");
-                return StatusCode(500, "Date range validation failed.");
+                _logger.LogError(ex, "Error occurred while triggering data split.");
+                return StatusCode(500, "An internal server error occurred.");
             }
         }
     }
