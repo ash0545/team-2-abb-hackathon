@@ -1,0 +1,85 @@
+@use '../step-shared.scss';
+
+.status-pulse {
+  width: 0.75rem;
+  height: 0.75rem;
+  background-color: hsl(var(--primary));
+  border-radius: 50%;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  margin: 0 auto 1rem;
+}
+
+.charts-grid {
+  margin-top: 1.5rem;
+}
+
+.table-container {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.875rem;
+
+  th, td {
+    padding: 0.75rem;
+    border-bottom: 1px solid hsl(var(--border));
+  }
+
+  th {
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+  }
+}
+
+.badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  font-size: 0.75rem;
+
+  &.pass {
+    background-color: hsla(var(--success), 0.1);
+    color: hsl(var(--success));
+  }
+  &.fail {
+    background-color: hsla(var(--destructive), 0.1);
+    color: hsl(var(--destructive));
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: .5;
+  }
+}
+
+.dark-mode {
+  .status-pulse {
+    background-color: hsl(var(--primary));
+  }
+
+  table {
+    th, td {
+      border-bottom: 1px solid hsl(var(--border));
+    }
+
+    th {
+      color: hsl(var(--muted-foreground));
+    }
+  }
+
+  .badge {
+    &.pass {
+      background-color: hsla(var(--success), 0.15); // slightly higher contrast for dark
+      color: hsl(var(--success));
+    }
+
+    &.fail {
+      background-color: hsla(var(--destructive), 0.15);
+      color: hsl(var(--destructive));
+    }
+  }
+}

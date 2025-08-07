@@ -66,6 +66,19 @@ def split_dataset_by_dates(request: DateSplitRequest) -> dict:
     del sampled_chunks
     gc.collect()
 
+    # --- NEW: Calculate daily distribution ---
+    logger.info("Calculating daily record distribution.")
+    # Ensure timestamp is datetime, then group by date and count
+    daily_dist_series = (
+        full_sampled_df.set_index(config.TIMESTAMP_COLUMN).resample("D").size()
+    )
+    # Convert to dictionary with string keys in 'YYYY-MM-DD' format
+    daily_distribution = {
+        index.strftime("%Y-%m-%d"): count
+        for index, count in daily_dist_series.items()
+        if count > 0
+    }
+
     # --- 3. Split the Sampled DataFrame based on Date Ranges ---
     logger.info("Splitting the sampled data into train, test, and simulation sets.")
 
@@ -108,4 +121,5 @@ def split_dataset_by_dates(request: DateSplitRequest) -> dict:
         "test_set_rows": len(test_df),
         "simulation_set_path": config.SIMULATION_SET_PATH,
         "simulation_set_rows": len(simulation_df),
+        "daily_distribution": daily_distribution,
     }

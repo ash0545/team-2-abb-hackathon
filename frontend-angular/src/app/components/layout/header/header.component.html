@@ -1,0 +1,39 @@
+<header class="header-container">
+  <!-- ABB Brand Header -->
+  <div class="brand-header">
+    <div class="brand-content">
+      <div>
+        <h1 class="brand-title">MiniML - Predictive Quality Control</h1>
+      </div>
+      
+      <div class="brand-logo">
+        ABB
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Steps -->
+  <div class="nav-header">
+    <div class="nav-content">
+      <div class="steps-wrapper">
+        <div *ngFor="let step of steps" class="step-item" [ngClass]="{'active': step.isActive}">
+          <div class="step-indicator" [ngClass]="{
+            'completed': step.isCompleted,
+            'active': step.isActive
+          }">
+            <span *ngIf="!step.isCompleted">{{ step.id }}</span>
+            <span *ngIf="step.isCompleted">✓</span>
+          </div>
+          <span class="step-title">{{ step.title }}</span>
+        </div>
+      </div>
+      
+      <div class="step-counter">
+        Step {{ currentStep }} of {{ steps.length }}
+      </div>
+      <button class="toggle-theme-btn" (click)="toggleDarkMode()">
+      {{ darkMode ? '🌞 Light Mode' : '🌙 Dark Mode' }}
+    </button>
+    </div>
+  </div>
+</header>

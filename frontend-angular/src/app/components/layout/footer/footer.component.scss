@@ -1,0 +1,20 @@
+@use '../../../../styles.scss';
+
+.footer-container {
+  background: linear-gradient(135deg, hsl(var(--abb-red)), hsl(var(--abb-purple)));
+  color: hsl(var(--primary-foreground));
+  padding: 1rem 1.5rem;
+  margin-top: auto; // Pushes footer to the bottom
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.footer-text {
+  font-size: 0.875rem;
+}

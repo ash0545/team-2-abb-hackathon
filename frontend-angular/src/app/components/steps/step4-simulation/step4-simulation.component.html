@@ -1,0 +1,130 @@
+<div class="step-container large">
+  <div class="step-header">
+    <h2 class="title">Real-Time Prediction Simulation</h2>
+    <p class="subtitle">
+      Simulate model inference on historical test data in real-time
+    </p>
+  </div>
+
+  <!-- Simulation Control -->
+  <div class="card">
+    <div class="card-content centered-content">
+      <!-- Ready State -->
+      <div *ngIf="!isSimulating && !isCompleted">
+        <h3 class="status-title">{{ statusMessage }}</h3>
+        <p class="status-subtitle">
+          Click the button below to begin streaming predictions.
+        </p>
+        <button class="btn btn-primary large" (click)="startSimulation()">
+          Start Simulation
+        </button>
+      </div>
+      <!-- Simulating State (includes warmup) -->
+      <div *ngIf="isSimulating">
+        <div class="status-pulse"></div>
+        <h3 class="status-title primary">{{ statusMessage }}</h3>
+        <button class="btn btn-danger" (click)="stopSimulation()">
+          Stop Simulation
+        </button>
+      </div>
+      <!-- Completed State -->
+      <div *ngIf="isCompleted">
+        <h3 class="status-title success">Simulation Completed!</h3>
+        <button class="btn btn-outline" (click)="restartProcess()">
+          Restart Process
+        </button>
+      </div>
+      <div *ngIf="error" class="error-message">{{ error }}</div>
+    </div>
+  </div>
+
+  <!-- Results Section -->
+  <ng-container *ngIf="liveStats">
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <p class="stat-label">TOTAL</p>
+        <p class="stat-value">{{ liveStats.total_predictions | number }}</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">PASS</p>
+        <p class="stat-value success">{{ liveStats.pass_count | number }}</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">FAIL</p>
+        <p class="stat-value error">{{ liveStats.fail_count | number }}</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">AVG CONF</p>
+        <p class="stat-value primary">
+          {{ liveStats.average_confidence | number : "1.1-1" }}%
+        </p>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Real-Time Quality Score</h3>
+        </div>
+        <div class="card-content">
+          <div class="chart-container"><canvas #qualityChart></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">Pass/Fail Distribution</h3>
+        </div>
+        <div class="card-content">
+          <div class="chart-container"><canvas #confidenceChart></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Table -->
+    <div class="card" *ngIf="livePredictions.length > 0">
+      <div class="card-header">
+        <h3 class="card-title">Live Prediction Stream</h3>
+      </div>
+      <div class="card-content table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>TIME</th>
+              <th>SAMPLE ID</th>
+              <th>PREDICTION</th>
+              <th>CONFIDENCE</th>
+              <!-- DYNAMIC HEADERS -->
+              <th *ngFor="let featureName of topFeatureNames">
+                {{ featureName }}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let pred of livePredictions">
+              <td>{{ pred.timestamp | date : "mediumTime" }}</td>
+              <td>{{ pred.sample_id }}</td>
+              <td>
+                <span
+                  class="badge"
+                  [ngClass]="{
+                    pass: pred.prediction === 'Pass',
+                    fail: pred.prediction !== 'Pass'
+                  }"
+                >
+                  {{ pred.prediction }}
+                </span>
+              </td>
+              <td>{{ pred.confidence | number : "1.1-1" }}%</td>
+              <!-- DYNAMIC DATA -->
+              <td *ngFor="let featureName of topFeatureNames">
+                {{ pred.top_features[featureName] | number : "1.2-4" }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+</div>

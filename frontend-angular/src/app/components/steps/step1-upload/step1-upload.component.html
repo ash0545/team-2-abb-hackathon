@@ -1,0 +1,121 @@
+<div class="step-container">
+  <div class="step-header">
+    <h2 class="title">Upload Dataset</h2>
+    <p class="subtitle">
+      Upload your CSV dataset to begin the quality control analysis
+    </p>
+  </div>
+
+  <!-- UPLOAD AREA -->
+  <ng-container *ngIf="!metadata">
+    <div class="card">
+      <div class="card-content">
+        <div
+          class="drop-zone"
+          [class.drag-over]="isDragOver"
+          (dragover)="onDragOver($event)"
+          (dragleave)="onDragLeave($event)"
+          (drop)="onDrop($event)"
+        >
+          <div *ngIf="isUploading; else uploadPrompt" class="status-indicator">
+            <div class="spinner"></div>
+            <p>Processing your dataset...</p>
+          </div>
+
+          <ng-template #uploadPrompt>
+            <div class="status-indicator">
+              <svg
+                class="icon"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                ></path>
+              </svg>
+              <div>
+                <p class="prompt-title">
+                  Click to select a CSV file or drag and drop
+                </p>
+                <p class="prompt-subtitle">Supported format: CSV files only</p>
+              </div>
+              <input
+                type="file"
+                class="file-input"
+                accept=".csv"
+                (change)="onFileSelected($event)"
+              />
+              <button class="btn btn-outline" (click)="$event.preventDefault()">
+                Choose File
+              </button>
+            </div>
+          </ng-template>
+        </div>
+        <div *ngIf="error" class="error-message">{{ error }}</div>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- METADATA DISPLAY -->
+  <ng-container *ngIf="metadata">
+    <div class="card success-card">
+      <div class="card-header">
+        <h3 class="success-title">
+          <svg
+            class="icon success"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+            ></path>
+          </svg>
+          Dataset Uploaded Successfully
+        </h3>
+      </div>
+      <div class="card-content">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <p class="stat-label">Records</p>
+            <p class="stat-value">{{ metadata.numberOfRecords | number }}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Columns</p>
+            <p class="stat-value">{{ metadata.numberOfColumns }}</p>
+          </div>
+          <div class="stat-card">
+            <p class="stat-label">Pass Rate</p>
+            <p class="stat-value success">
+              {{ metadata.passRatePercentage | number : "1.1-1" }}%
+            </p>
+          </div>
+          <div class="stat-card wide">
+            <p class="stat-label">Data Time Range</p>
+            <p class="stat-value small">
+              {{ metadata.firstTimestamp | date : "medium" : "UTC" }} to
+              {{ metadata.lastTimestamp | date : "medium" : "UTC" }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="step-footer">
+    <button
+      class="btn btn-primary"
+      (click)="proceedToNextStep()"
+      [disabled]="!metadata"
+    >
+      Next: Configure Ranges
+    </button>
+  </div>
+</div>
