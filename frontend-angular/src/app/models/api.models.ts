@@ -1,5 +1,7 @@
 // This file contains all the data structures for API requests and responses.
 
+// --- Stage 1 ---
+
 export interface DatasetMetadata {
   numberOfRecords: number;
   numberOfColumns: number;
@@ -10,10 +12,8 @@ export interface DatasetMetadata {
   fileSize: string;
   timestampsAreSynthetic: boolean; // New property
 }
-export interface DateRange {
-  start: string;
-  end: string;
-}
+
+// --- Stage 2 ---
 
 export interface DateRanges {
   trainStart: string;
@@ -24,37 +24,39 @@ export interface DateRanges {
   simulationEnd: string;
 }
 
+// Model for the .NET validation response
 export interface DateRangeValidationResponse {
   status: 'Valid' | 'Invalid';
   message: string;
-  trainRecordCount: number;
-  testRecordCount: number;
-  simulationRecordCount: number;
-  trainDurationDays: number;
-  testDurationDays: number;
-  simulationDurationDays: number;
-  monthlyDistribution: { [key: string]: number };
 }
 
-export interface TrainingMetrics {
-  accuracy: number;
-  precision: number;
-  recall: number;
-  f1Score: number;
-  // Chart data
-  accuracyLossChart: { epoch: number; accuracy: number; loss: number }[];
-  confusionMatrixChart: { name: string; value: number }[];
+export interface DataSplitResponse {
+  message: string;
+  trainSetRows: number;
+  testSetRows: number;
+  simulationSetRows: number;
+  dailyDistribution: { [key: string]: number }; // Key is 'YYYY-MM-DD'
 }
 
-export interface SimulationResult {
-  timestamp: string;
-  sampleId: string;
-  prediction: 'Pass' | 'Fail' | 'Error';
-  confidenceScore: number;
-  temperature: number;
-  pressure: number;
-  humidity: number;
-}
+// export interface TrainingMetrics {
+//   accuracy: number;
+//   precision: number;
+//   recall: number;
+//   f1Score: number;
+//   // Chart data
+//   accuracyLossChart: { epoch: number; accuracy: number; loss: number }[];
+//   confusionMatrixChart: { name: string; value: number }[];
+// }
+
+// export interface SimulationResult {
+//   timestamp: string;
+//   sampleId: string;
+//   prediction: 'Pass' | 'Fail' | 'Error';
+//   confidenceScore: number;
+//   temperature: number;
+//   pressure: number;
+//   humidity: number;
+// }
 
 // --- Stage 3 ---
 

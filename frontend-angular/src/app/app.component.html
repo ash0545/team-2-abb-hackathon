@@ -2,27 +2,27 @@
 
 <main class="main-content">
   <div [ngSwitch]="currentStep">
-
     <div *ngSwitchCase="1">
-      <app-step1-upload (datasetUploaded)="onDatasetUploaded($event)"></app-step1-upload>
+      <app-step1-upload
+        (datasetUploaded)="onDatasetUploaded($event)"
+      ></app-step1-upload>
     </div>
 
-    <app-step2-date-ranges 
+    <app-step2-date-ranges
       *ngSwitchCase="2"
-      (dateRangesSet)="onDateRangesSet($event)">
+      (dateRangesSet)="onDateRangesSet($event)"
+    >
     </app-step2-date-ranges>
 
-    <app-step3-training 
+    <app-step3-training
       *ngSwitchCase="3"
       [dateRanges]="dateRanges"
-      (modelTrained)="onModelTrained()">
-    </app-step3-training> 
+      (modelTrained)="onModelTrained()"
+    >
+    </app-step3-training>
 
-     <app-step4-simulation 
-      *ngSwitchCase="4"
-      [dateRanges]="dateRanges"
-      (restart)="handleRestart()">
-    </app-step4-simulation> 
+    <app-step4-simulation *ngSwitchCase="4" (restart)="handleRestart()">
+    </app-step4-simulation>
   </div>
 </main>
 

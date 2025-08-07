@@ -1,7 +1,9 @@
 <div class="step-container">
   <div class="step-header">
     <h2 class="title">Date Range Selection</h2>
-    <p class="subtitle">Configure time-based splits for training, testing, and simulation</p>
+    <p class="subtitle">
+      Configure time-based splits for training, testing, and simulation
+    </p>
   </div>
 
   <!-- Date Range Inputs -->
@@ -12,9 +14,9 @@
       </div>
       <div class="card-content date-inputs">
         <label for="train-start">Start Date</label>
-        <input id="train-start" type="date" [(ngModel)]="ranges.trainStart">
+        <input id="train-start" type="date" [(ngModel)]="ranges.trainStart" />
         <label for="train-end">End Date</label>
-        <input id="train-end" type="date" [(ngModel)]="ranges.trainEnd">
+        <input id="train-end" type="date" [(ngModel)]="ranges.trainEnd" />
       </div>
     </div>
     <div class="card">
@@ -23,9 +25,9 @@
       </div>
       <div class="card-content date-inputs">
         <label for="test-start">Start Date</label>
-        <input id="test-start" type="date" [(ngModel)]="ranges.testStart">
+        <input id="test-start" type="date" [(ngModel)]="ranges.testStart" />
         <label for="test-end">End Date</label>
-        <input id="test-end" type="date" [(ngModel)]="ranges.testEnd">
+        <input id="test-end" type="date" [(ngModel)]="ranges.testEnd" />
       </div>
     </div>
     <div class="card">
@@ -34,60 +36,75 @@
       </div>
       <div class="card-content date-inputs">
         <label for="sim-start">Start Date</label>
-        <input id="sim-start" type="date" [(ngModel)]="ranges.simulationStart">
+        <input
+          id="sim-start"
+          type="date"
+          [(ngModel)]="ranges.simulationStart"
+        />
         <label for="sim-end">End Date</label>
-        <input id="sim-end" type="date" [(ngModel)]="ranges.simulationEnd">
+        <input id="sim-end" type="date" [(ngModel)]="ranges.simulationEnd" />
       </div>
     </div>
   </div>
 
   <!-- Validation Control -->
   <div class="validation-section">
-    <button class="btn btn-outline" (click)="validateRanges()" [disabled]="isValidating">
+    <button
+      class="btn btn-outline"
+      (click)="validateRanges()"
+      [disabled]="isValidating || isSplitting"
+    >
       <span *ngIf="!isValidating">Validate Ranges</span>
       <span *ngIf="isValidating" class="spinner-small"></span>
     </button>
-    <div *ngIf="validationResponse" [class.success]="validationResponse.status === 'Valid'" [class.error]="validationResponse.status !== 'Valid'" class="validation-message">
+    <!-- Show validation message -->
+    <div
+      *ngIf="validationResponse"
+      [class.success]="validationResponse.status === 'Valid'"
+      [class.error]="validationResponse.status !== 'Valid'"
+      class="validation-message"
+    >
       {{ validationResponse.message }}
     </div>
-    <div *ngIf="error" class="validation-message error">{{ error }}</div>
+    <div *ngIf="error && !validationResponse" class="validation-message error">
+      {{ error }}
+    </div>
   </div>
 
   <!-- Validation Results -->
-  <ng-container *ngIf="validationResponse?.status === 'Valid'">
+  <ng-container *ngIf="splitResponse">
     <div class="stats-grid">
       <div class="stat-card">
         <p class="stat-label">Train Records</p>
-        <!-- FIX: Use safe navigation operator (?.) -->
-        <p class="stat-value">{{ validationResponse?.trainRecordCount | number }}</p>
+        <p class="stat-value">{{ splitResponse.trainSetRows | number }}</p>
       </div>
       <div class="stat-card">
         <p class="stat-label">Test Records</p>
-        <!-- FIX: Use safe navigation operator (?.) -->
-        <p class="stat-value">{{ validationResponse?.testRecordCount | number }}</p>
+        <p class="stat-value">{{ splitResponse.testSetRows | number }}</p>
       </div>
       <div class="stat-card">
         <p class="stat-label">Sim Records</p>
-        <!-- FIX: Use safe navigation operator (?.) -->
-        <p class="stat-value">{{ validationResponse?.simulationRecordCount | number }}</p>
+        <p class="stat-value">{{ splitResponse.simulationSetRows | number }}</p>
       </div>
     </div>
-
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">Monthly Record Distribution</h3>
+        <h3 class="card-title">Daily Record Distribution</h3>
       </div>
       <div class="card-content">
-        <div class="chart-container">
-          <canvas #monthlyDistChart></canvas>
-        </div>
+        <div class="chart-container"><canvas #dailyDistChart></canvas></div>
       </div>
     </div>
   </ng-container>
 
   <div class="step-footer">
-    <button class="btn btn-primary" (click)="proceedToNextStep()" [disabled]="validationResponse?.status !== 'Valid'">
-      Next: Train Model
+    <button
+      class="btn btn-primary"
+      (click)="proceedToNextStep()"
+      [disabled]="validationResponse?.status !== 'Valid' || isSplitting"
+    >
+      <span *ngIf="!isSplitting">Split Data & Proceed</span>
+      <span *ngIf="isSplitting" class="spinner-small"></span>
     </button>
   </div>
 </div>

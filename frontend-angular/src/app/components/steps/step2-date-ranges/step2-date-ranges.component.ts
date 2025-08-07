@@ -1,23 +1,47 @@
-import { Component, EventEmitter, Output, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Output,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../services/api.service';
-import { DateRanges, DateRangeValidationResponse } from '../../../models/api.models';
+import {
+  DateRanges,
+  DateRangeValidationResponse,
+  DataSplitResponse,
+} from '../../../models/api.models';
 import { finalize } from 'rxjs/operators';
-import { Chart, registerables } from 'chart.js';
+import {
+  Chart,
+  registerables,
+  BarController,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+} from 'chart.js';
 
-Chart.register(...registerables);
+Chart.register(
+  ...registerables,
+  BarController,
+  CategoryScale,
+  LinearScale,
+  Tooltip
+);
 
 @Component({
   selector: 'app-step2-date-ranges',
   standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './step2-date-ranges.component.html',
-  styleUrls: ['./step2-date-ranges.component.scss']
+  styleUrls: ['./step2-date-ranges.component.scss'],
 })
 export class Step2DateRangesComponent {
   @Output() dateRangesSet = new EventEmitter<DateRanges>();
-  @ViewChild('monthlyDistChart') monthlyDistChartCanvas!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('dailyDistChart')
+  dailyDistChartCanvas!: ElementRef<HTMLCanvasElement>;
 
   ranges: DateRanges = {
     trainStart: '',
@@ -25,121 +49,161 @@ export class Step2DateRangesComponent {
     testStart: '',
     testEnd: '',
     simulationStart: '',
-    simulationEnd: ''
+    simulationEnd: '',
   };
 
   isValidating = false;
+  isSplitting = false;
   validationResponse: DateRangeValidationResponse | null = null;
+  splitResponse: DataSplitResponse | null = null;
   error: string | null = null;
   private chart: Chart | undefined;
 
   constructor(private apiService: ApiService) {}
+  // // Helper function to convert a YYYY-MM-DD date string to a full ISO string at the start of that day in UTC.
+  // private toUtcIsoString(dateString: string): string {
+  //   if (!dateString) return '';
+  //   // new Date('YYYY-MM-DD') creates a date at midnight in the LOCAL timezone.
+  //   // We convert this to an ISO string, which will be in UTC.
+  //   return new Date(dateString).toISOString();
+  // }
+
+  // // A new model to hold the UTC-converted dates for sending
+  // private getUtcRanges(): DateRanges {
+  //   return {
+  //     trainStart: this.toUtcIsoString(this.ranges.trainStart),
+  //     trainEnd: this.toUtcIsoString(this.ranges.trainEnd),
+  //     testStart: this.toUtcIsoString(this.ranges.testStart),
+  //     testEnd: this.toUtcIsoString(this.ranges.testEnd),
+  //     simulationStart: this.toUtcIsoString(this.ranges.simulationStart),
+  //     simulationEnd: this.toUtcIsoString(this.ranges.simulationEnd),
+  //   };
+  // }
 
   validateRanges() {
-    if (!this.isAllDatesProvided()) {
-      this.error = 'All date ranges must be filled before validation.';
-      return;
-    }
-
     this.isValidating = true;
     this.error = null;
+    this.validationResponse = null;
+    this.splitResponse = null; // Reset previous results
+    if (this.chart) this.chart.destroy();
 
-    this.apiService.validateDateRanges(this.ranges)
-      .pipe(finalize(() => this.isValidating = false))
+    // ❗ ADDED CONSOLE LOG
+    // This will show the exact data being sent in the network request.
+    console.log(
+      '🚀 Sending to .NET backend for validation:',
+      JSON.stringify(this.ranges, null, 2)
+    );
+
+    this.apiService
+      .validateDateRanges(this.ranges)
+      .pipe(finalize(() => (this.isValidating = false)))
       .subscribe({
         next: (response) => {
-          if (response.status === 'Valid') {
-            this.validationResponse = response;
-            this.createMonthlyDistChart();
-          } else {
-            this.validationResponse = null;
-            this.error = response.message || 'Date ranges are not valid.';
+          this.validationResponse = response;
+          if (response.status !== 'Valid') {
+            this.error = response.message;
           }
         },
         error: (err) => {
-          this.error = 'Failed to validate date ranges.';
-          console.error(err);
-          this.validationResponse = null;
-        }
+          this.error = err.message;
+        },
       });
   }
 
   proceedToNextStep() {
-    if (this.validationResponse?.status === 'Valid') {
-      this.dateRangesSet.emit(this.ranges);
-    }
+    if (this.validationResponse?.status !== 'Valid') return;
+
+    this.isSplitting = true;
+    this.error = null;
+
+    this.apiService
+      .splitData(this.ranges)
+      .pipe(finalize(() => (this.isSplitting = false)))
+      .subscribe({
+        next: (response) => {
+          this.splitResponse = response;
+          this.createDailyDistChart(); // Create chart with data and colors
+          // Wait a moment for chart to render before emitting
+          setTimeout(() => this.dateRangesSet.emit(this.ranges), 100);
+        },
+        error: (err) => {
+          this.error = err.message;
+        },
+      });
   }
 
   private isAllDatesProvided(): boolean {
-  const r = this.ranges;
-  return Boolean(
-    r.trainStart &&
-    r.trainEnd &&
-    r.testStart &&
-    r.testEnd &&
-    r.simulationStart &&
-    r.simulationEnd
-  );
-}
+    const r = this.ranges;
+    return Boolean(
+      r.trainStart &&
+        r.trainEnd &&
+        r.testStart &&
+        r.testEnd &&
+        r.simulationStart &&
+        r.simulationEnd
+    );
+  }
 
-  private createMonthlyDistChart() {
-    const distributionData = this.validationResponse?.monthlyDistribution;
+  private createDailyDistChart() {
+    const distributionData = this.splitResponse?.dailyDistribution;
     if (!distributionData) return;
 
     setTimeout(() => {
-      const ctx = this.monthlyDistChartCanvas.nativeElement.getContext('2d');
+      const ctx = this.dailyDistChartCanvas.nativeElement.getContext('2d');
       if (!ctx) return;
 
       if (this.chart) {
         this.chart.destroy();
       }
 
-      const labels = Object.keys(distributionData).sort();
-      const data = labels.map(label => distributionData[label]);
+      const sortedLabels = Object.keys(distributionData).sort(
+        (a, b) => new Date(a).getTime() - new Date(b).getTime()
+      );
+      const data = sortedLabels.map((label) => distributionData[label]);
 
-      const backgroundColors = labels.map(label => {
-        if (this.isInRange(label, this.ranges.trainStart, this.ranges.trainEnd)) return 'rgba(0, 128, 0, 0.6)';     // Green
-        if (this.isInRange(label, this.ranges.testStart, this.ranges.testEnd)) return 'rgba(255, 165, 0, 0.6)';     // Orange
-        if (this.isInRange(label, this.ranges.simulationStart, this.ranges.simulationEnd)) return 'rgba(30, 144, 255, 0.6)'; // Blue
-        return 'rgba(200, 200, 200, 0.4)'; // fallback muted
+      const backgroundColors = sortedLabels.map((label) => {
+        const date = new Date(label);
+        if (
+          date >= new Date(this.ranges.trainStart) &&
+          date <= new Date(this.ranges.trainEnd)
+        )
+          return 'rgba(40, 167, 69, 0.7)'; // Green
+        if (
+          date >= new Date(this.ranges.testStart) &&
+          date <= new Date(this.ranges.testEnd)
+        )
+          return 'rgba(255, 193, 7, 0.7)'; // Orange
+        if (
+          date >= new Date(this.ranges.simulationStart) &&
+          date <= new Date(this.ranges.simulationEnd)
+        )
+          return 'rgba(0, 123, 255, 0.7)'; // Blue
+        return 'rgba(200, 200, 200, 0.4)';
       });
 
-      const borderColors = backgroundColors.map(c => c.replace('0.6', '1'));
+      const borderColors = backgroundColors.map((c) => c.replace('0.6', '1'));
 
       this.chart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: labels,
-          datasets: [{
-            label: 'Record Count',
-            data: data,
-            backgroundColor: backgroundColors,
-            borderColor: borderColors,
-            borderWidth: 1
-          }]
+          labels: sortedLabels,
+          datasets: [
+            {
+              label: 'Record Count',
+              data: data,
+              backgroundColor: backgroundColors,
+              borderColor: borderColors,
+              borderWidth: 1,
+            },
+          ],
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           scales: { y: { beginAtZero: true } },
-          plugins: { legend: { display: false } }
-        }
+          plugins: { legend: { display: false } },
+        },
       });
     }, 0);
-  }
-
-  private isInRange(monthLabel: string, startDate: string, endDate: string): boolean {
-    const monthMap: { [key: string]: number } = {
-      Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5,
-      Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11
-    };
-    const monthIndex = monthMap[monthLabel];
-    if (monthIndex === undefined) return false;
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const midMonth = new Date(start.getFullYear(), monthIndex, 15);
-
-    return midMonth >= start && midMonth <= end;
   }
 }

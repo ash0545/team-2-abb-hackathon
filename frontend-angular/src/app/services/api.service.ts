@@ -6,6 +6,7 @@ import {
   DatasetMetadata,
   DateRanges,
   DateRangeValidationResponse,
+  DataSplitResponse,
   TrainingStartResponse,
   TrainingStatusResponse,
   SimulationStartResponse,
@@ -37,19 +38,22 @@ export class ApiService {
       .pipe(catchError(this.handleError));
   }
 
-  /**
-   * Validates the date ranges for training, testing, and simulation.
-   * @param ranges Object containing 3 date ranges.
-   * @returns Validation summary and monthly distribution.
-   */
+  // --- Stage 2 ---
+
   validateDateRanges(
     ranges: DateRanges
   ): Observable<DateRangeValidationResponse> {
     return this.http
       .post<DateRangeValidationResponse>(
-        `${this.apiUrl}/dataset/validate-date-ranges`,
+        `${this.apiUrl}/dataset/validate-ranges`,
         ranges
       )
+      .pipe(catchError(this.handleError));
+  }
+
+  splitData(ranges: DateRanges): Observable<DataSplitResponse> {
+    return this.http
+      .post<DataSplitResponse>(`${this.apiUrl}/dataset/split-data`, ranges)
       .pipe(catchError(this.handleError));
   }
 

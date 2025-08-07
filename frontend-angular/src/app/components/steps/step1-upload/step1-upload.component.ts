@@ -9,7 +9,7 @@ import { finalize } from 'rxjs/operators';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './step1-upload.component.html',
-  styleUrls: ['./step1-upload.component.scss']
+  styleUrls: ['./step1-upload.component.scss'],
 })
 export class Step1UploadComponent {
   @Output() datasetUploaded = new EventEmitter<DatasetMetadata>();
@@ -55,20 +55,17 @@ export class Step1UploadComponent {
     this.metadata = null;
     this.isUploading = true;
 
-    this.apiService.uploadDataset(file)
-      .pipe(finalize(() => this.isUploading = false))
+    this.apiService
+      .uploadDataset(file)
+      .pipe(finalize(() => (this.isUploading = false)))
       .subscribe({
         next: (responseMetadata) => {
-          this.metadata = {
-            ...responseMetadata,
-            firstTimestamp: new Date(responseMetadata.firstTimestamp).toISOString(),
-lastTimestamp: new Date(responseMetadata.lastTimestamp).toISOString()
-          };
+          this.metadata = responseMetadata;
         },
         error: (err) => {
           this.error = err.message;
           this.metadata = null;
-        }
+        },
       });
   }
 

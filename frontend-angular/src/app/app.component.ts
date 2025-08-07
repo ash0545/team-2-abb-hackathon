@@ -17,18 +17,18 @@ import { Step4SimulationComponent } from './components/steps/step4-simulation/st
     Step1UploadComponent,
     Step2DateRangesComponent,
     Step3TrainingComponent,
-    Step4SimulationComponent
+    Step4SimulationComponent,
   ],
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  styleUrls: ['./app.component.scss'],
 })
 export class AppComponent {
-  currentStep = 1;  // 👈 SET THIS TO 1
+  currentStep = 1; // 👈 SET THIS TO 1
   steps = [
     { id: 1, title: 'Upload Dataset', isActive: true, isCompleted: false },
-    { id: 2, title: 'Date Range', isActive: false, isCompleted: false},
+    { id: 2, title: 'Date Range', isActive: false, isCompleted: false },
     { id: 3, title: 'Train Model', isActive: false, isCompleted: false },
-    { id: 4, title: 'Simulation', isActive: false, isCompleted: false }
+    { id: 4, title: 'Simulation', isActive: false, isCompleted: false },
   ];
 
   dateRanges: any;
