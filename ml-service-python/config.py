@@ -3,12 +3,12 @@ import os
 # --- Celery Configuration ---
 # Using Redis as the message broker and result backend.
 # Assumes Redis is running on localhost:6379. This will be 'redis:6379' in Docker.
-CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "http://redis:6379/0")
-CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "http://redis:6379/0")
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://redis:6379/0")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://redis:6379/0")
 
 # --- Directory and File Paths ---
 # Base directory for storing all persistent data
-STORAGE_BASE_DIR = os.path.join(os.path.dirname(__file__), "..", "storage")
+STORAGE_BASE_DIR = os.path.join(os.path.dirname(__file__), "storage")
 # Directory to store the uploaded dataset
 DATA_DIR = os.path.join(STORAGE_BASE_DIR, "data")
 # Directory to store model artifacts like features list, models, etc.

@@ -41,6 +41,21 @@ services:
     networks:
       - app-network
 
+  celery-worker:
+    build:
+      context: ./ml-service-python
+      dockerfile: Dockerfile
+    command: celery -A celery_worker.celery_app worker --loglevel=info
+    depends_on:
+      - redis
+      - ml-service
+    volumes:
+      - ./storage:/app/storage
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - app-network
+
   redis:
     image: redis:alpine
     ports:
